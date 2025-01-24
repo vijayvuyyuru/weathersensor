@@ -1,0 +1,24 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "vijayvuyyuru:weathersensor",
+  "visibility": "public",
+  "url": "https://github.com/vijayvuyyuru/weathersensor",
+  "description": "Modular sensor component: weathersensor",
+  "models": [
+    {
+      "api": "rdk:component:sensor",
+      "model": "vijayvuyyuru:weathersensor:weathersensor"
+    }
+  ],
+  "entrypoint": "bin/weathersensor",
+  "first_run": "",
+  "build": {
+    "build": "make module.tar.gz",
+    "setup": "make setup",
+    "path": "bin/module.tar.gz",
+    "arch": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  }
+}
