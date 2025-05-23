@@ -152,6 +152,7 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 	currentWeather := response["current"].(map[string]any)
 	output["outside_f"] = currentWeather["temp_f"]
 	output["condition"] = currentWeather["condition"].(map[string]any)["text"]
+	output["code"] = currentWeather["condition"].(map[string]any)["code"]
 	output["cloud_cover_pct"] = currentWeather["cloud"].(float64)
 	output["precipitation_inches"] = currentWeather["precip_in"]
 
