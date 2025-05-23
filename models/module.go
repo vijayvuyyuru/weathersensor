@@ -65,17 +65,17 @@ type Config struct {
 // Returns implicit dependencies based on the config.
 // The path is the JSON path in your robot's config (not the `Config` struct) to the
 // resource being validated; e.g. "components.0".
-func (cfg *Config) Validate(path string) ([]string, error) {
+func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.TemperatureSensor == "" {
-		return nil, fmt.Errorf(`expected "temp-sensor" attribute for weather module`)
+		return nil, nil, fmt.Errorf(`expected "temp-sensor" attribute for weather module`)
 	}
 	if cfg.APIKey == "" {
-		return nil, fmt.Errorf(`expected "apikey" attribute for weather module`)
+		return nil, nil, fmt.Errorf(`expected "apikey" attribute for weather module`)
 	}
 	if cfg.Zipcode == 0 {
-		return nil, fmt.Errorf(`expected "zipcode" attribute for weather module`)
+		return nil, nil, fmt.Errorf(`expected "zipcode" attribute for weather module`)
 	}
-	return []string{cfg.TemperatureSensor}, nil
+	return []string{cfg.TemperatureSensor}, nil, nil
 }
 
 type weathersensorWeathersensor struct {
