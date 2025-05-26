@@ -92,6 +92,8 @@ type weathersensorWeathersensor struct {
 	apiKey            string
 	zipcode           int
 
+	overrideCode int
+
 	// Uncomment this if the model does not have any goroutines that
 	// need to be shut down while closing.
 	resource.TriviallyCloseable
@@ -156,7 +158,11 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 	currentWeather := response["current"].(map[string]any)
 	output["outside_f"] = currentWeather["temp_f"]
 	output["condition"] = currentWeather["condition"].(map[string]any)["text"]
-	output["code"] = currentWeather["condition"].(map[string]any)["code"]
+	if s.overrideCode != 0 {
+		output["code"] = s.overrideCode
+	} else {
+		output["code"] = currentWeather["condition"].(map[string]any)["code"]
+	}
 	output["cloud_cover_pct"] = currentWeather["cloud"].(float64)
 	output["precipitation_inches"] = currentWeather["precip_in"]
 
@@ -178,7 +184,14 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 }
 
 func (s *weathersensorWeathersensor) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
-	panic("not implemented")
+	if cmd["set_code"] != nil {
+		code, ok := cmd["set_code"].(int)
+		if !ok {
+			return nil, errors.Errorf("set_code must be an integer")
+		}
+		s.overrideCode = code
+	}
+	return nil, nil
 }
 
 func (s *weathersensorWeathersensor) Close(context.Context) error {
