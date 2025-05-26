@@ -185,11 +185,11 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 
 func (s *weathersensorWeathersensor) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
 	if cmd["set_code"] != nil {
-		code, ok := cmd["set_code"].(int)
+		code, ok := cmd["set_code"].(float64)
 		if !ok {
 			return nil, errors.Errorf("set_code must be an integer")
 		}
-		s.overrideCode = code
+		s.overrideCode = int(code)
 	}
 	return nil, nil
 }
