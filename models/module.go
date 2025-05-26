@@ -66,8 +66,9 @@ type Config struct {
 // The path is the JSON path in your robot's config (not the `Config` struct) to the
 // resource being validated; e.g. "components.0".
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
+	deps := []string{}
 	if cfg.TemperatureSensor == "" {
-		return nil, nil, fmt.Errorf(`expected "temp-sensor" attribute for weather module`)
+		deps = append(deps, cfg.TemperatureSensor)
 	}
 	if cfg.APIKey == "" {
 		return nil, nil, fmt.Errorf(`expected "apikey" attribute for weather module`)
@@ -75,7 +76,7 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.Zipcode == 0 {
 		return nil, nil, fmt.Errorf(`expected "zipcode" attribute for weather module`)
 	}
-	return []string{cfg.TemperatureSensor}, nil, nil
+	return deps, nil, nil
 }
 
 type weathersensorWeathersensor struct {
@@ -126,9 +127,12 @@ func (s *weathersensorWeathersensor) Reconfigure(ctx context.Context, deps resou
 	if err != nil {
 		return err
 	}
-	s.temperatureSensor, err = sensor.FromDependencies(deps, sensorConfig.TemperatureSensor)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get temperature sensor %v for weather sensor", sensorConfig.TemperatureSensor)
+
+	if sensorConfig.TemperatureSensor != "" {
+		s.temperatureSensor, err = sensor.FromDependencies(deps, sensorConfig.TemperatureSensor)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get temperature sensor %v for weather sensor", sensorConfig.TemperatureSensor)
+		}
 	}
 	s.apiKey = sensorConfig.APIKey
 	s.zipcode = sensorConfig.Zipcode
@@ -159,12 +163,15 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 	astronomy := astronomyResponse["astronomy"].(map[string]any)["astro"].(map[string]any)
 	output["is_day"] = astronomy["is_sun_up"]
 
-	readings, err := s.temperatureSensor.Readings(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error getting reading from temp sensor")
+	if s.temperatureSensor != nil {
+		readings, err := s.temperatureSensor.Readings(ctx, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error getting reading from temp sensor")
+		}
+		insideTempC := readings["degrees_celsius"].(float64)
+		output["inside_f"] = insideTempC*9/5 + 32
 	}
-	insideTempC := readings["degrees_celsius"].(float64)
-	output["inside_f"] = insideTempC*9/5 + 32
+
 	return output, nil
 }
 
