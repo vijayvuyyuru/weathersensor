@@ -168,8 +168,10 @@ func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[str
 		if err != nil {
 			return nil, errors.Wrapf(err, "error getting reading from temp sensor")
 		}
-		insideTempC := readings["degrees_celsius"].(float64)
-		output["inside_f"] = insideTempC*9/5 + 32
+		insideTempC, ok := readings["degrees_celsius"]
+		if ok {
+			output["inside_f"] = insideTempC.(float64)*9/5 + 32
+		}
 	}
 
 	return output, nil
