@@ -66,9 +66,9 @@ type Config struct {
 // The path is the JSON path in your robot's config (not the `Config` struct) to the
 // resource being validated; e.g. "components.0".
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
-	deps := []string{}
-	if cfg.TemperatureSensor == "" {
-		deps = append(deps, cfg.TemperatureSensor)
+	optionalDeps := []string{}
+	if cfg.TemperatureSensor != "" {
+		optionalDeps = append(optionalDeps, cfg.TemperatureSensor)
 	}
 	if cfg.APIKey == "" {
 		return nil, nil, fmt.Errorf(`expected "apikey" attribute for weather module`)
@@ -76,7 +76,7 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.Zipcode == 0 {
 		return nil, nil, fmt.Errorf(`expected "zipcode" attribute for weather module`)
 	}
-	return deps, nil, nil
+	return nil, optionalDeps, nil
 }
 
 type weathersensorWeathersensor struct {
