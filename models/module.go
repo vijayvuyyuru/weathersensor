@@ -13,7 +13,6 @@ import (
 	"go.viam.com/rdk/components/sensor"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
-	"go.viam.com/utils/rpc"
 )
 
 const (
@@ -80,10 +79,10 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 }
 
 type weathersensorWeathersensor struct {
-	name resource.Name
+	resource.Named
+	resource.AlwaysRebuild
 
 	logger logging.Logger
-	cfg    *Config
 
 	cancelCtx  context.Context
 	cancelFunc func()
@@ -93,10 +92,6 @@ type weathersensorWeathersensor struct {
 	zipcode           int
 
 	overrideCode int
-
-	// Uncomment this if the model does not have any goroutines that
-	// need to be shut down while closing.
-	resource.TriviallyCloseable
 }
 
 func newWeathersensorWeathersensor(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (sensor.Sensor, error) {
@@ -108,41 +103,23 @@ func newWeathersensorWeathersensor(ctx context.Context, deps resource.Dependenci
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	s := &weathersensorWeathersensor{
-		name:       rawConf.ResourceName(),
+		Named:      rawConf.ResourceName().AsNamed(),
 		logger:     logger,
-		cfg:        conf,
 		cancelCtx:  cancelCtx,
 		cancelFunc: cancelFunc,
-	}
-	if err := s.Reconfigure(ctx, deps, rawConf); err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-func (s *weathersensorWeathersensor) Name() resource.Name {
-	return s.name
-}
-
-func (s *weathersensorWeathersensor) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
-	sensorConfig, err := resource.NativeConfig[*Config](conf)
-	if err != nil {
-		return err
+		apiKey:     conf.APIKey,
+		zipcode:    conf.Zipcode,
 	}
 
-	if sensorConfig.TemperatureSensor != "" {
-		s.temperatureSensor, err = sensor.FromDependencies(deps, sensorConfig.TemperatureSensor)
+	if conf.TemperatureSensor != "" {
+		s.temperatureSensor, err = sensor.FromProvider(deps, conf.TemperatureSensor)
 		if err != nil {
-			return errors.Wrapf(err, "unable to get temperature sensor %v for weather sensor", sensorConfig.TemperatureSensor)
+			logger.Warnf("unable to get temperature sensor %v, continuing without indoor temperature readings: %v", conf.TemperatureSensor, err)
+			s.temperatureSensor = nil
 		}
 	}
-	s.apiKey = sensorConfig.APIKey
-	s.zipcode = sensorConfig.Zipcode
-	return nil
-}
 
-func (s *weathersensorWeathersensor) NewClientFromConn(ctx context.Context, conn rpc.ClientConn, remoteName string, name resource.Name, logger logging.Logger) (sensor.Sensor, error) {
-	panic("not implemented")
+	return s, nil
 }
 
 func (s *weathersensorWeathersensor) Readings(ctx context.Context, extra map[string]interface{}) (map[string]interface{}, error) {
@@ -257,6 +234,3 @@ func (s *weathersensorWeathersensor) getWeatherBodyOrCode(url string) (map[strin
 	return responseJSON, nil
 }
 
-func (s *weathersensorWeathersensor) getCurrentWeatherURL() string {
-	return fmt.Sprintf("%s?q=%d&key=%s", currentWeatherURL, s.zipcode, s.apiKey)
-}
